@@ -6,7 +6,11 @@ import sys
 
 fig = plt.figure()
 csv_data = genfromtxt(sys.argv[1], delimiter=',')
-data = csv_data[1:, 2:17]
+
+# data = csv_data[1:, 2:17]
+data = csv_data
+
+# data is a n x 15 array
 rows, cols = data.shape
 
 vis_rows = cols * 3
