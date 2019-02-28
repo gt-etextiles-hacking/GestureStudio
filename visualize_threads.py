@@ -5,7 +5,7 @@ import matplotlib.animation as animation
 import sys
 
 fig = plt.figure()
-csv_data = genfromtxt(sys.argv[1], delimiter=',')
+csv_data = genfromtxt('./data/converted/{0}'.format(sys.argv[1]), delimiter=',')
 
 # data = csv_data[1:, 2:17]
 data = csv_data
