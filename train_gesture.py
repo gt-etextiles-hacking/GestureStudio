@@ -33,7 +33,7 @@ TIME_PERIODS = 45
 # TIME_PERIODS, then there is no overlap between the segments
 STEP_DISTANCE = 15
 
-data = np.genfromtxt(sys.argv[1], delimiter=",")
+data = np.genfromtxt('./data/annotated/{0}'.format(sys.argv[1]), delimiter=",")
 
 rows, cols = data.shape
 test_data_size = int(rows / 5)

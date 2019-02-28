@@ -6,7 +6,7 @@ from matplotlib.widgets import Button
 import sys
 
 fig = plt.figure()
-csv_data = genfromtxt(sys.argv[1], delimiter=',')
+csv_data = genfromtxt('./data/converted/{0}'.format(sys.argv[1]), delimiter=',')
 
 # data = csv_data[1:, 2:17]
 data = csv_data
@@ -47,8 +47,7 @@ def updatefig(*args):
     try:
         vis_data[:,:] = data[i:i + vis_rows, :-1] # last column is y labels
     except:
-        import pdb; pdb.set_trace()
-        np.savetxt('labeled_{0}'.format(sys.argv[1]), data, delimiter=',')
+        np.savetxt('./data/annotated/{0}'.format(sys.argv[1]), data, delimiter=',')
         plt.close(fig)
         sys.exit()
 
