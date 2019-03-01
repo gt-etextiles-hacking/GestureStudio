@@ -33,10 +33,12 @@ Note: Inspiration for visualizing the time series thread data came from the infa
 
 Example: `python annotate_threads.py forcetouch_data.csv`
 
-Note: The script will initially prompt you with the following message:
+Note: This script displays the same visualization as the aforementioned `visualize_threads.py` does, except with a title indicating whether the script is recording a Positive Annotation (recording 1's indicating that yes, this is the gesture we are trying to detect) or a Negative Annotation (recording 0's indicating that no, this is something we should NOT identify as our new gesture). Clicking anywhere on the plot will toggle between positive and negative annotations, and basically makes this like a game of DDR where you want to time your toggling clicks so that you get positive annotations for the duration of your gesture and then get negative annotations for anything else.
+
+The script will initially prompt you with the following message:
 > Often times the VERY first row of data is the beginning of the gesture you're trying to recognize. In that case, would you like to start annotating with 1's? (y/n)
 
-This simply refers to how your dataset might start off with a positive or negative instance of the gesture you are annotating for. Pressing y will show the same visualization as the aforemention `visualize_threads.py` does, except with a title indicating whether the script is recording a Positive Annotation (recording 1's indicating that yes, this is the gesture we are trying to detect) or a Negative Annotation (recording 0's indicating that no, this is something we should NOT identify as our new gesture). Clicking anywhere on the plot will toggle between positive and negative annotations, and basically makes this like a game of DDR where you want to time your toggling clicks so that you get positive annotations for the duration of your gesture and then get negative annotations for anything else.
+This simply refers to how your dataset might start off with a positive or negative instance of the gesture you are annotating for. Typing `y` will start the annotations with positive labels and `n` will start the annotations with negative labels.
 
 As a heads up, you need to click the visualization window an extra time in the VERY beginning to make the visualization your active window. Only with an active window will your clicks be registered a toggling between positive and negative annotations.
 
