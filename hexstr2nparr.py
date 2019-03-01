@@ -20,7 +20,6 @@ try:
             i += 1
 except IOError:
     print("IOError")
-else:
     print('Ensure that raw hex value csv data is placed in ./data/raw/ and provide file name only, not full URI')
     print('Example: Ensure sample.csv is copied over to ./data/raw/sample.csv and run\n\t \'python hexstr2nparr.py sample.csv\'')
 

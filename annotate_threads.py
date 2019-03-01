@@ -23,7 +23,9 @@ i = 0
 
 ani = None
 pause = False
-annotate = True
+
+print("Often times the VERY first row of data is the beginning of the gesture you're trying to recognize.\nIn that case, would you like to start annotating with 1's? (y/n)")
+annotate = (input().lower() == 'y')
 
 # allows you to pause/play by clicking on figure
 def onClickCanvas(event):
@@ -48,6 +50,7 @@ def updatefig(*args):
         vis_data[:,:] = data[i:i + vis_rows, :-1] # last column is y labels
     except:
         np.savetxt('./data/annotated/{0}'.format(sys.argv[1]), data, delimiter=',')
+        print('Annotated file saved at ./data/annotated/{0}'.format(sys.argv[1]))
         plt.close(fig)
         sys.exit()
 
@@ -57,7 +60,7 @@ def updatefig(*args):
     i += 1
     return im,
 
-plt.title('Annotating')
+plt.title("Annotating" if annotate else "Non Gesture")
 fig.canvas.mpl_connect('button_press_event', onClickToggleAnnotate)
 ani = animation.FuncAnimation(fig, updatefig, interval=30, blit=True)
 plt.show()

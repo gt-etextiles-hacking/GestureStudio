@@ -1,4 +1,7 @@
-from __future__ import print_function
+# tutorial p1: https://towardsdatascience.com/human-activity-recognition-har-tutorial-with-keras-and-core-ml-part-1-8c05e365dfa0
+# tutorial p2: https://towardsdatascience.com/human-activity-recognition-har-tutorial-with-keras-and-core-ml-part-2-857104583d94
+
+# from __future__ import print_function
 from matplotlib import pyplot as plt
 
 import numpy as np
@@ -18,29 +21,28 @@ from keras.utils import np_utils
 
 import sys
 import time
+import os
 
 
 verbose = False
 
 N_FEATURES = 15
+M_CLASSES = 2
 LABELS = ['Undetected', 'ForceTouch ']
 
-print('keras version ', keras.__version__)
-
+# SEGMENTATION PARAMETERS
 # The number of steps within one time segment
 TIME_PERIODS = 45
 # The steps to take from one segment to the next; if this value is equal to
 # TIME_PERIODS, then there is no overlap between the segments
 STEP_DISTANCE = 15
 
-data = np.genfromtxt('./data/annotated/{0}'.format(sys.argv[1]), delimiter=",")
+# MODEL HYPER PARAMETERS
+BATCH_SIZE = 400
+EPOCHS = 50
 
-rows, cols = data.shape
-test_data_size = int(rows / 5)
-print('Dataset comprises of {0} rows, of which {1} are used for testing'.format(rows, test_data_size))
 
-train = data[test_data_size:,:]
-test = data[:test_data_size, :]
+print('keras version ', keras.__version__)
 
 
 def create_segments_and_labels(data, time_steps, step):
@@ -53,49 +55,88 @@ def create_segments_and_labels(data, time_steps, step):
     segments = []
     labels = []
     for i in range(0, data.shape[0] - time_steps, step):
-        # xs = df['x-axis'].values[i: i + time_steps]
-        # ys = df['y-axis'].values[i: i + time_steps]
-        # zs = df['z-axis'].values[i:i + time_steps]
-        segment = data[i:i + time_steps, :-1]
+        # sliding window of 45 rows, each excluding the last column
+        x_segment = data[i:i + time_steps, :-1]
 
-        # Retrieve the most often used label in this segment
-        label = stats.mode(data[i:i + time_steps, -1])[0][0]
-        segments.append(segment)
-        labels.append(label)
+        # Retrieve the most often used label in this segment (mode of last column across 45 rows)
+        y_label = stats.mode(data[i:i + time_steps, -1])[0][0]
+        segments.append(x_segment)
+        labels.append(y_label)
 
-    # Bring the segments into a better shape
+    # Bring the segments into a better shape, in our case
     reshaped_segments = np.asarray(segments, dtype= np.float32).reshape(-1, time_steps, N_FEATURES)
     labels = np.asarray(labels)
 
     return reshaped_segments, labels
 
-x_train, y_train = create_segments_and_labels(train, TIME_PERIODS, STEP_DISTANCE)
-x_test, y_test = create_segments_and_labels(test, TIME_PERIODS, STEP_DISTANCE)
+def ingest_annotated_data(file):
+    data = np.genfromtxt('./data/annotated/{0}'.format(file), delimiter=",")
 
-print('x_train shape: ', x_train.shape)
-print(x_train.shape[0], 'training samples')
-print('y_train shape: ', y_train.shape)
+    rows, cols = data.shape
+    test_data_size = int(rows / 5)
+    print('\t\tDataset comprises of {0} rows, of which {1} are used for testing'.format(rows, test_data_size))
 
-print('x_test shape: ', x_test.shape)
-print(x_test.shape[0], 'testing samples')
-print('y_test shape: ', y_test.shape)
+    # TODO: randomly sample data for train/test
+    train = data[test_data_size:,:]
+    test = data[:test_data_size, :]
 
-num_time_periods, num_sensors = x_train.shape[1], x_train.shape[2]
-num_classes = 2
+    x_train, y_train = create_segments_and_labels(train, TIME_PERIODS, STEP_DISTANCE)
+    x_test, y_test = create_segments_and_labels(test, TIME_PERIODS, STEP_DISTANCE)
+
+    return x_train, x_test, y_train, y_test
+
+def preprocess_annotated_data():
+
+    usable_data = sys.argv[1:] if len(sys.argv) > 1 else [os.fsdecode(f) for f in os.listdir(os.fsencode('./data/annotated/'))]
+
+    x_train = []
+    x_test = []
+    y_train = []
+    y_test = []
+    if verbose: print("ingesting and preprocessing...")
+    for filename in usable_data:
+        if verbose: print("\t... {0}".format(filename))
+        batch_x_train, batch_x_test, batch_y_train, batch_y_test = ingest_annotated_data(filename)
+        x_train.append(batch_x_train)
+        x_test.append(batch_x_test)
+        y_train.append(batch_y_train)
+        y_test.append(batch_y_test)
+        if verbose: print('\t\tSegmented {0} rows of training data and {1} rows of testing data'.format(batch_x_train.shape[0], batch_x_test.shape[0]))
+
+    # import pdb; pdb.set_trace()
+    x_train = np.vstack(x_train)
+    x_test = np.vstack(x_test)
+    y_train = np.concatenate(y_train)
+    y_test = np.concatenate(y_test)
 
 
-input_shape = (num_time_periods*num_sensors)
-x_train = x_train.reshape(x_train.shape[0], input_shape)
-x_test = x_test.reshape(x_test.shape[0], input_shape)
-print('x_train reshaped:', x_train.shape)
-print('x_test reshaped:', x_test.shape)
-print('input_shape:', input_shape)
+    print('\nTraining/Testing Data Summary')
+    print('\t{0} total training samples'.format(x_train.shape[0]))
+    print('\t\tx_train shape:', x_train.shape)
+    print('\t\ty_train shape:', y_train.shape)
 
-y_train_hot = np_utils.to_categorical(y_train, num_classes)
-y_test_hot = np_utils.to_categorical(y_test, num_classes)
-print('New y_train shape for model fitting: ', y_train_hot.shape)
-print('New y_test shape: ', y_test_hot.shape)
+    print('\ttotal testing samples'.format(x_test.shape[0]))
+    print('\t\tx_test shape: ', x_test.shape)
+    print('\t\ty_test shape: ', y_test.shape)
 
+    num_time_periods, num_sensors = x_train.shape[1], x_train.shape[2]
+
+    input_shape = (num_time_periods*num_sensors)
+    x_train = x_train.reshape(x_train.shape[0], input_shape)
+    x_test = x_test.reshape(x_test.shape[0], input_shape)
+    y_train_hot = np_utils.to_categorical(y_train, M_CLASSES)
+    y_test_hot = np_utils.to_categorical(y_test, M_CLASSES)
+    if verbose:
+        print('\tx_train reshaped:', x_train.shape)
+        print('\tx_test reshaped:', x_test.shape)
+        print('\tdata instance input shape:', input_shape)
+        print('\tNew y_train one-hot vector shape for model fitting:', y_train_hot.shape)
+        print('\tNew y_test one-hot vector shape: ', y_test_hot.shape)
+
+    return x_train, x_test, y_train, y_train_hot, y_test_hot, input_shape
+
+
+x_train, x_test, y_train, y_train_hot, y_test_hot, input_shape = preprocess_annotated_data()
 model_m = Sequential()
 # Remark: since coreml cannot accept vector shapes of complex shape like
 # [80,3] this workaround is used in order to reshape the vector internally
@@ -105,23 +146,21 @@ model_m.add(Dense(100, activation='relu'))
 model_m.add(Dense(100, activation='relu'))
 model_m.add(Dense(100, activation='relu'))
 model_m.add(Flatten())
-model_m.add(Dense(num_classes, activation='softmax'))
+model_m.add(Dense(M_CLASSES, activation='softmax'))
 print(model_m.summary())
 
 
 callbacks_list = [
     keras.callbacks.ModelCheckpoint(
-        filepath='best_model.{epoch:02d}-{val_loss:.2f}.h5',
+        filepath='./model/checkpoints/best_model.{epoch:02d}-{val_loss:.2f}.h5',
         monitor='val_loss', save_best_only=True),
-    keras.callbacks.EarlyStopping(monitor='acc', patience=1)
+    keras.callbacks.EarlyStopping(monitor='val_loss', patience=2)
 ]
 
 model_m.compile(loss='categorical_crossentropy',
                 optimizer='adam', metrics=['accuracy'])
 
-# Hyper-parameters
-BATCH_SIZE = 400
-EPOCHS = 50
+
 
 # Enable validation to use ModelCheckpoint and EarlyStopping callbacks.
 history = model_m.fit(x_train,
@@ -144,6 +183,8 @@ if verbose:
     plt.ylim(0)
     plt.legend()
     plt.show()
+
+sys.exit()
 
 # Print confusion matrix for training data
 y_pred_train = model_m.predict(x_train)
@@ -186,14 +227,14 @@ coreml_model = coremltools.converters.keras.convert(model_m,
 
 
 
-print(coreml_model)
 coreml_model.author = 'Aayush Kumar'
 coreml_model.license = 'N/A'
 coreml_model.short_description = 'Levis Jacquard New Gesture: Force Touch Recognition'
 coreml_model.output_description['output'] = 'Probability of each activity'
 coreml_model.output_description['classLabel'] = 'Labels of activity'
 
-coreml_model.save('NewGestureClassifier.mlmodel')
+print(coreml_model)
+coreml_model.save('./model/coreml/NewGestureClassifier.mlmodel')
 
 # print('\nPrediction from Keras:')
 
@@ -203,11 +244,11 @@ test_record = x_test[1].reshape(1,input_shape)
 # print('\nPrediction from Coreml:')
 # coreml_prediction = coreml_model.predict({'15ThreadConductivityReadings': test_record.reshape(input_shape)})
 # print(coreml_prediction["classLabel"])
-
+n = 500
+print("Testing prediction speed on {0} samples".format(n))
 start = time.time()
-n = 100
 for i in range(n):
     coreml_model.predict({'15ThreadConductivityReadings': test_record.reshape(input_shape)})
 end = time.time()
 elapsed = end - start
-print(elapsed, elapsed / n)
+print("Cumulative Prediction Time: {0:.4} sec, Average Prediction Time: {1:.4} sec".format(elapsed, elapsed / n))
