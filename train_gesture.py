@@ -38,7 +38,7 @@ TIME_PERIODS = 45
 STEP_DISTANCE = 15
 
 # MODEL HYPER PARAMETERS
-BATCH_SIZE = 400
+BATCH_SIZE = 40
 EPOCHS = 50
 
 
@@ -111,13 +111,15 @@ def preprocess_annotated_data():
 
 
     print('\nTraining/Testing Data Summary')
+    positive_train_instances = sum(y_train)
+    positive_test_instances = sum(y_train)
     print('\t{0} total training samples'.format(x_train.shape[0]))
-    print('\t\tx_train shape:', x_train.shape)
-    print('\t\ty_train shape:', y_train.shape)
+    print('\t\tpositive examples', positive_train_instances)
+    print('\t\tnegative examples', y_train.shape[0] - positive_train_instances)
 
-    print('\ttotal testing samples'.format(x_test.shape[0]))
-    print('\t\tx_test shape: ', x_test.shape)
-    print('\t\ty_test shape: ', y_test.shape)
+    print('\t{0} total testing samples'.format(x_test.shape[0]))
+    print('\t\tpositive examples', positive_test_instances)
+    print('\t\tnegative examples', y_test.shape[0] - positive_test_instances, "\n")
 
     num_time_periods, num_sensors = x_train.shape[1], x_train.shape[2]
 
@@ -147,7 +149,7 @@ model_m.add(Dense(100, activation='relu'))
 model_m.add(Dense(100, activation='relu'))
 model_m.add(Flatten())
 model_m.add(Dense(M_CLASSES, activation='softmax'))
-print(model_m.summary())
+if verbose: print(model_m.summary())
 
 
 callbacks_list = [
