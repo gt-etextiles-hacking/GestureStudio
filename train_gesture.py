@@ -186,8 +186,6 @@ if verbose:
     plt.legend()
     plt.show()
 
-sys.exit()
-
 # Print confusion matrix for training data
 y_pred_train = model_m.predict(x_train)
 # Take the class with the highest probability from the train predictions

@@ -40,7 +40,7 @@ def onClickCanvas(event):
 def onClickToggleAnnotate(event):
     global annotate
     annotate = not annotate
-    plt.title("Annotating" if annotate else "Non Gesture")
+    plt.title("Positive Annotation" if annotate else "Negative Annotation")
 
 
 # animation update function
@@ -60,7 +60,7 @@ def updatefig(*args):
     i += 1
     return im,
 
-plt.title("Annotating" if annotate else "Non Gesture")
+plt.title("Positive Annotation" if annotate else "Negative Annotation")
 fig.canvas.mpl_connect('button_press_event', onClickToggleAnnotate)
 ani = animation.FuncAnimation(fig, updatefig, interval=30, blit=True)
 plt.show()
