@@ -23,21 +23,26 @@ import sys
 import time
 import os
 
-
 verbose = False
 
 N_FEATURES = 15
 M_CLASSES = 2
 LABELS = ['Undetected', 'ForceTouch ']
 
-# SEGMENTATION PARAMETERS
-# The number of steps within one time segment
-TIME_PERIODS = 45
-# The steps to take from one segment to the next; if this value is equal to
-# TIME_PERIODS, then there is no overlap between the segments
-STEP_DISTANCE = 15
+# ~~~~ SEGMENTATION PARAMETERS ~~~~
+# The number of consecutive data entries within one segment
+SEGMENT_LENGTH = 45
 
-# MODEL HYPER PARAMETERS
+# The number of entries to advance forward from segment T to segment t+1
+SEGMENT_INTERVAL = 15
+
+# [                            SEGMENT T                            ]
+#                        [                            SEGMENT T+1                          ]
+# +-- SEGMENT_INTERVAL --+
+
+
+
+# ~~~~ MODEL HYPER PARAMETERS ~~~~
 BATCH_SIZE = 40
 EPOCHS = 50
 
@@ -45,26 +50,24 @@ EPOCHS = 50
 print('keras version ', keras.__version__)
 
 
-def create_segments_and_labels(data, time_steps, step):
+def create_segments_and_labels(data):
 
     # x, y, z acceleration as features
 
-    # Number of steps to advance in each iteration (for me, it should always
-    # be equal to the time_steps in order to have no overlap between segments)
-    # step = time_steps
     segments = []
     labels = []
-    for i in range(0, data.shape[0] - time_steps, step):
+    for i in range(0, data.shape[0] - SEGMENT_LENGTH, SEGMENT_INTERVAL):
         # sliding window of 45 rows, each excluding the last column
-        x_segment = data[i:i + time_steps, :-1]
+        x_segment = data[i:i + SEGMENT_LENGTH, :-1]
 
         # Retrieve the most often used label in this segment (mode of last column across 45 rows)
-        y_label = stats.mode(data[i:i + time_steps, -1])[0][0]
+        y_label = stats.mode(data[i:i + SEGMENT_LENGTH, -1])[0][0]
         segments.append(x_segment)
         labels.append(y_label)
 
-    # Bring the segments into a better shape, in our case
-    reshaped_segments = np.asarray(segments, dtype= np.float32).reshape(-1, time_steps, N_FEATURES)
+    # Bring the segments into a better shape, in our case:
+    # (# of segments) x (# data entries per segment) x (# features per data entry)
+    reshaped_segments = np.asarray(segments, dtype= np.float32).reshape(-1, SEGMENT_LENGTH, N_FEATURES)
     labels = np.asarray(labels)
 
     return reshaped_segments, labels
@@ -80,8 +83,8 @@ def ingest_annotated_data(file):
     train = data[test_data_size:,:]
     test = data[:test_data_size, :]
 
-    x_train, y_train = create_segments_and_labels(train, TIME_PERIODS, STEP_DISTANCE)
-    x_test, y_test = create_segments_and_labels(test, TIME_PERIODS, STEP_DISTANCE)
+    x_train, y_train = create_segments_and_labels(train)
+    x_test, y_test = create_segments_and_labels(test)
 
     return x_train, x_test, y_train, y_test
 
@@ -103,7 +106,6 @@ def preprocess_annotated_data():
         y_test.append(batch_y_test)
         if verbose: print('\t\tSegmented {0} rows of training data and {1} rows of testing data'.format(batch_x_train.shape[0], batch_x_test.shape[0]))
 
-    # import pdb; pdb.set_trace()
     x_train = np.vstack(x_train)
     x_test = np.vstack(x_test)
     y_train = np.concatenate(y_train)
@@ -121,9 +123,7 @@ def preprocess_annotated_data():
     print('\t\tpositive examples', positive_test_instances)
     print('\t\tnegative examples', y_test.shape[0] - positive_test_instances, "\n")
 
-    num_time_periods, num_sensors = x_train.shape[1], x_train.shape[2]
-
-    input_shape = (num_time_periods*num_sensors)
+    input_shape = (SEGMENT_LENGTH * N_FEATURES)
     x_train = x_train.reshape(x_train.shape[0], input_shape)
     x_test = x_test.reshape(x_test.shape[0], input_shape)
     y_train_hot = np_utils.to_categorical(y_train, M_CLASSES)
@@ -143,7 +143,7 @@ model_m = Sequential()
 # Remark: since coreml cannot accept vector shapes of complex shape like
 # [80,3] this workaround is used in order to reshape the vector internally
 # prior feeding it into the network
-model_m.add(Reshape((TIME_PERIODS, N_FEATURES), input_shape=(input_shape,)))
+model_m.add(Reshape((SEGMENT_LENGTH, N_FEATURES), input_shape=(input_shape,)))
 model_m.add(Dense(100, activation='relu'))
 model_m.add(Dense(100, activation='relu'))
 model_m.add(Dense(100, activation='relu'))
@@ -156,7 +156,7 @@ callbacks_list = [
     keras.callbacks.ModelCheckpoint(
         filepath='./model/checkpoints/best_model.{epoch:02d}-{val_loss:.2f}.h5',
         monitor='val_loss', save_best_only=True),
-    keras.callbacks.EarlyStopping(monitor='val_loss', patience=2)
+    keras.callbacks.EarlyStopping(monitor='val_loss', patience=4)
 ]
 
 model_m.compile(loss='categorical_crossentropy',
@@ -234,7 +234,10 @@ coreml_model.output_description['output'] = 'Probability of each activity'
 coreml_model.output_description['classLabel'] = 'Labels of activity'
 
 print(coreml_model)
-coreml_model.save('./model/coreml/NewGestureClassifier.mlmodel')
+
+print("\n\n================================ SAVE AS: =================================")
+print("====================== (Or Ctrl-D to not save/exit) =======================\n")
+coreml_model.save('./model/coreml/NewGestureClassifier_{0}.mlmodel'.format(input()))
 
 # print('\nPrediction from Keras:')
 
