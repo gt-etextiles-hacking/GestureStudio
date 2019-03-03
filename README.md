@@ -45,7 +45,7 @@ The script will initially prompt you with the following message:
 
 This simply refers to how your dataset might start off with a positive or negative instance of the gesture you are annotating for. Typing `y` will start the annotations with positive labels and `n` will start the annotations with negative labels.
 
-As a heads up, you need to click the visualization window an extra time in the VERY beginning to make the visualization your active window. Only with an active window will your clicks be registered a toggling between positive and negative annotations.
+As a heads up, you need to click the visualization window an extra time in the VERY beginning to make the visualization your active window. Only with an active window will your clicks be registered as toggling between positive and negative annotations.
 
 TLDR:
 If your data starts with the gesture you're trying to recognize, select `y` in order to begin annotating with 1's.
