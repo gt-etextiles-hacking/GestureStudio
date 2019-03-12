@@ -14,8 +14,9 @@ from sklearn.metrics import classification_report
 from sklearn import preprocessing
 
 import keras
+
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, Reshape
+from keras.layers import Dense, Dropout, Flatten, Reshape, regularizers
 from keras.layers import Conv2D, MaxPooling2D
 from keras.utils import np_utils
 
@@ -23,11 +24,11 @@ import sys
 import time
 import os
 
-verbose = False
+verbose = True
 
 N_FEATURES = 15
 M_CLASSES = 2
-LABELS = ['Undetected', 'ForceTouch ']
+LABELS = ['Undetected', 'ForceTouch']
 
 # ~~~~ SEGMENTATION PARAMETERS ~~~~
 # The number of consecutive data entries within one segment
@@ -43,7 +44,7 @@ SEGMENT_INTERVAL = 15
 
 
 # ~~~~ MODEL HYPER PARAMETERS ~~~~
-BATCH_SIZE = 40
+BATCH_SIZE = 80
 EPOCHS = 50
 
 
@@ -114,7 +115,7 @@ def preprocess_annotated_data():
 
     print('\nTraining/Testing Data Summary')
     positive_train_instances = sum(y_train)
-    positive_test_instances = sum(y_train)
+    positive_test_instances = sum(y_test)
     print('\t{0} total training samples'.format(x_train.shape[0]))
     print('\t\tpositive examples', positive_train_instances)
     print('\t\tnegative examples', y_train.shape[0] - positive_train_instances)
@@ -144,9 +145,10 @@ model_m = Sequential()
 # [80,3] this workaround is used in order to reshape the vector internally
 # prior feeding it into the network
 model_m.add(Reshape((SEGMENT_LENGTH, N_FEATURES), input_shape=(input_shape,)))
-model_m.add(Dense(100, activation='relu'))
-model_m.add(Dense(100, activation='relu'))
-model_m.add(Dense(100, activation='relu'))
+# model_m.add(Dense(640, activation='relu'))
+model_m.add(Dense(125, activation='relu', kernel_regularizer=keras.regularizers.l2(0.01)))
+model_m.add(Dense(25, activation='relu'))
+model_m.add(Dense(5, activation='relu'))
 model_m.add(Flatten())
 model_m.add(Dense(M_CLASSES, activation='softmax'))
 if verbose: print(model_m.summary())
@@ -156,7 +158,7 @@ callbacks_list = [
     keras.callbacks.ModelCheckpoint(
         filepath='./model/checkpoints/best_model.{epoch:02d}-{val_loss:.2f}.h5',
         monitor='val_loss', save_best_only=True),
-    keras.callbacks.EarlyStopping(monitor='val_loss', patience=4)
+    keras.callbacks.EarlyStopping(monitor='val_loss', patience=6)
 ]
 
 model_m.compile(loss='categorical_crossentropy',
@@ -233,20 +235,20 @@ coreml_model.short_description = 'Levis Jacquard New Gesture: Force Touch Recogn
 coreml_model.output_description['output'] = 'Probability of each activity'
 coreml_model.output_description['classLabel'] = 'Labels of activity'
 
-print(coreml_model)
+if verbose: print(coreml_model)
 
 print("\n\n================================ SAVE AS: =================================")
 print("====================== (Or Ctrl-D to not save/exit) =======================\n")
-coreml_model.save('./model/coreml/NewGestureClassifier_{0}.mlmodel'.format(input()))
+coreml_model.save('./model/coreml/NewGestureClassifier{0}.mlmodel'.format(input()))
 
 # print('\nPrediction from Keras:')
 
 test_record = x_test[1].reshape(1,input_shape)
-# keras_prediction = np.argmax(model_m.predict(test_record), axis=1)
-# print(LABELS[keras_prediction[0]])
-# print('\nPrediction from Coreml:')
-# coreml_prediction = coreml_model.predict({'15ThreadConductivityReadings': test_record.reshape(input_shape)})
-# print(coreml_prediction["classLabel"])
+keras_prediction = np.argmax(model_m.predict(test_record), axis=1)
+print(LABELS[keras_prediction[0]])
+print('\nPrediction from Coreml:')
+coreml_prediction = coreml_model.predict({'15ThreadConductivityReadings': test_record.reshape(input_shape)})
+print(coreml_prediction["classLabel"])
 n = 500
 print("Testing prediction speed on {0} samples".format(n))
 start = time.time()
