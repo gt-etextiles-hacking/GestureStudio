@@ -62,5 +62,5 @@ def updatefig(*args):
 
 plt.title("Positive Annotation" if annotate else "Negative Annotation")
 fig.canvas.mpl_connect('button_press_event', onClickToggleAnnotate)
-ani = animation.FuncAnimation(fig, updatefig, interval=70, blit=True)
+ani = animation.FuncAnimation(fig, updatefig, interval=10, blit=True)
 plt.show()

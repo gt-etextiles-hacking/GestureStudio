@@ -239,7 +239,7 @@ if verbose: print(coreml_model)
 
 print("\n\n================================ SAVE AS: =================================")
 print("====================== (Or Ctrl-D to not save/exit) =======================\n")
-coreml_model.save('./model/coreml/NewGestureClassifier{0}.mlmodel'.format(input()))
+coreml_model.save('./model/coreml/{0}.mlmodel'.format(input()))
 
 # print('\nPrediction from Keras:')
 
