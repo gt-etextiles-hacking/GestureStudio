@@ -17,14 +17,8 @@ data = csv_data
 # data is a n x 15 array
 rows, cols = data.shape
 
-numNeg = 0
-numPos = 0 
-for x in data : 
-    curr = x[15]
-    if(curr == 0): 
-        numNeg = numNeg + 1
-    else: 
-        numPos = numPos + 1
+numNeg = np.sum(data[:,15])
+numPos = rows - numNeg
 
 print(numNeg)
 print(numPos)

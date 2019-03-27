@@ -4,29 +4,39 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import sys
 
-
-
-
 fig = plt.figure()
+annotate = False
+converted = False 
 
-print("Would you like to visualize the annotated version of this data ? (y/n)")
-annotate = (input().lower() == 'y')
-if (annotate):
-    try:
-        csv_data = np.genfromtxt('./data/annotated/{0}'.format(sys.argv[1]), delimiter=',')
+try:
+    csv_data = np.genfromtxt('./data/annotated/{0}'.format(sys.argv[1]), delimiter=',')
+    if(csv_data.any()):
+        columns = csv_data.shape[1]
+        if(columns == 16): 
+            print("Visualizing annotated data")
+            annotate = True
+            csv_data = genfromtxt('./data/annotated/{0}'.format(sys.argv[1]), delimiter=',')
+    else: 
+        print("Visualizing converted data")
+        annotate = False
+        converted = True 
+        csv_data = genfromtxt('./data/converted/{0}'.format(sys.argv[1]), delimiter=',')
+except IOError: 
+    pass 
+    try: 
+        csv_data = genfromtxt('./data/converted/{0}'.format(sys.argv[1]), delimiter=',')
         if(csv_data.any()):
             columns = csv_data.shape[1]
-            if(columns == 16): 
-                print("Visualizing annotated data")
-                annotate = True; 
-                csv_data = genfromtxt('./data/annotated/{0}'.format(sys.argv[1]), delimiter=',')
+            if(columns == 15): 
+                print("Visualizing converted data")
+                annotate = False
+                converted = True 
+                csv_data = genfromtxt('./data/converted/{0}'.format(sys.argv[1]), delimiter=',')
     except IOError:
         annotate = False 
+        converted = False 
         print("IOError")
-        print("This data has not been annotated yet.")
-        csv_data = genfromtxt('./data/converted/{0}'.format(sys.argv[1]), delimiter=',')
-else: 
-    csv_data = genfromtxt('./data/converted/{0}'.format(sys.argv[1]), delimiter=',')
+        print("This data does not exist")
 
 
 # data = csv_data[1:, 2:17]
@@ -63,10 +73,8 @@ def updatefig(*args):
         plt.close(fig)
         sys.exit()
 
-    if(annotate and data[i,-1] == 1): 
-        plt.title("Positive Annotation")
-    else: 
-        plt.title("Negative Annotation")
+    if(annotate and converted == False):
+        plt.title("Positive Annotation" if annotate and data[i, -1] == 1 else "Negative Annotation")
 
 
     im.set_array(vis_data)
