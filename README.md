@@ -1,8 +1,8 @@
-# JacquardUtils
+# Gesture Studio
 
 ## Components
 
-1. Utilities for converting, visualizing, and annotating raw hexstring Jacquard Data (length = 15)
+1. Utilities for converting, visualizing, and annotating raw hexstring Jacquard Gesture Data (length = 15)
 
 2. Script for training a new gesture using annotated data
 
